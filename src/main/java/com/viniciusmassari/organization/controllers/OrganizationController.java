@@ -41,7 +41,7 @@ public class OrganizationController {
             return Response.status(Status.CREATED).build();
         } catch (OrganizationAlreadyExists e) {
             LOG.error(e.getMessage());
-            return Response.status(Response.Status.BAD_REQUEST).entity("Organização já cadastrada").build();
+            return Response.status(Response.Status.BAD_REQUEST).entity(e.getMessage()).build();
 
         } catch (Exception e) {
             LOG.error(e.getMessage());
