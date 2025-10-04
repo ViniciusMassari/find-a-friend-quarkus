@@ -1,7 +1,7 @@
 package com.viniciusmassari.pet.entity;
 
 import com.viniciusmassari.organization.entities.OrganizationEntity;
-import com.viniciusmassari.pet.dtos.CreatePetRequestDTO;
+import com.viniciusmassari.pet.dto.CreatePetRequestDTO;
 import io.quarkus.hibernate.orm.panache.PanacheEntityBase;
 import jakarta.persistence.*;
 import jakarta.transaction.Transactional;
@@ -27,7 +27,8 @@ public class PetEntity extends PanacheEntityBase {
     public String description;
 
     @Column(nullable = false)
-    public short age;
+    @Enumerated
+    public Age age;
 
     @Column(nullable = false)
     @Enumerated()

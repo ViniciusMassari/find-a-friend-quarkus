@@ -1,9 +1,6 @@
-package com.viniciusmassari.pet.dtos;
+package com.viniciusmassari.pet.dto;
 
-import com.viniciusmassari.pet.entity.LivingSpace;
-import com.viniciusmassari.pet.entity.PetEnergy;
-import com.viniciusmassari.pet.entity.PetIndependence;
-import com.viniciusmassari.pet.entity.PetSize;
+import com.viniciusmassari.pet.entity.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
@@ -20,7 +17,7 @@ public record CreatePetRequestDTO(
 
         @Schema(examples = "10")
         @NotNull(message = "Campo idade não pode estar vazia ou conter apenas espaços")
-        short age,
+        Age age,
 
         @NotNull(message = "Campo espaço não pode estar vazia ou conter apenas espaços")
         @Schema(required = true)

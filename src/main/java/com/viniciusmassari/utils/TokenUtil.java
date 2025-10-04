@@ -27,9 +27,7 @@ public class TokenUtil {
 
     private static final Logger LOG = Logger.getLogger(TokenUtil.class);
 
-
     public String createToken(String id){
-        LOG.info("Criando token");
         return Jwt.subject(id).issuer("find-a-friend").expiresAt(Instant.now().plus(30, TimeUnit.MINUTES.toChronoUnit())).groups(Set.of("Organization")).sign();
     }
 

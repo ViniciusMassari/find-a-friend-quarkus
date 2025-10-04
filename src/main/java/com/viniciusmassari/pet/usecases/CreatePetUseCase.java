@@ -2,11 +2,10 @@ package com.viniciusmassari.pet.usecases;
 
 import com.viniciusmassari.exceptions.OrganizationNotFound;
 import com.viniciusmassari.organization.entities.OrganizationEntity;
-import com.viniciusmassari.pet.dtos.CreatePetRequestDTO;
+import com.viniciusmassari.pet.dto.CreatePetRequestDTO;
 import com.viniciusmassari.pet.entity.PetEntity;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import jakarta.enterprise.context.ApplicationScoped;
-import jakarta.inject.Inject;
 
 import java.util.Optional;
 import java.util.UUID;
