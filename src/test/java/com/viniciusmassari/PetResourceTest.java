@@ -1,25 +1,20 @@
 package com.viniciusmassari;
-import com.github.tomakehurst.wiremock.matching.StringValuePattern;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.viniciusmassari.pet.entity.*;
 import com.viniciusmassari.pet.usecases.CreatePetUseCase;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.InjectMock;
 import io.quarkus.test.security.TestSecurity;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.github.tomakehurst.wiremock.client.WireMock;
-import com.viniciusmassari.organization.repositories.OrganizationRepository;
 import com.viniciusmassari.pet.dto.CreatePetRequestDTO;
-import io.quarkiverse.wiremock.devservice.ConnectWireMock;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.http.ContentType;
-import jakarta.inject.Inject;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.jboss.logging.Logger;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import static com.github.tomakehurst.wiremock.client.WireMock.*;
 
 import static io.restassured.RestAssured.given;
 
@@ -28,18 +23,14 @@ import static org.hamcrest.Matchers.*;
 import org.mockito.Mockito;
 import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @QuarkusTest
 public class PetResourceTest {
     private static final Logger LOG = Logger.getLogger(PetResourceTest.class);
 
 
-    @Inject
-    OrganizationRepository organizationRepository;
+
 
     @InjectMock
     JsonWebToken jsonWebToken;
@@ -52,7 +43,7 @@ public class PetResourceTest {
     @Test
     @DisplayName("Should create a new pet (not testing the jwt authentication)")
     @TestSecurity(user = "expectedUser", roles = "user")
-    public void create_pet() throws JsonProcessingException {
+    public void create_pet() {
         PanacheMock.mock(PetEntity.class);
 
         CreatePetRequestDTO createPetRequest = new CreatePetRequestDTO(
@@ -90,18 +81,20 @@ public class PetResourceTest {
         Map<String,String> params = new HashMap<>();
         params.put("city","São Paulo");
         params.put("age","wrong value");
-        given().queryParams(params).get("/pet").then().statusCode(400);
+        given()
+                .queryParams(params)
+                .get("/pet")
+                .then().statusCode(400);
     }
 
 
     @Test
-    @DisplayName("Should return a list with two animals")
-    public void should_return_a_list() throws org.testcontainers.shaded.com.fasterxml.jackson.core.JsonProcessingException {
+    @DisplayName("Should return a list with two pets")
+    public void should_return_a_list()  {
         List<PetEntity> pets = new ArrayList<>();
         pets.add(new PetEntity());
         pets.add(new PetEntity());
         ObjectMapper mapper = new ObjectMapper();
-        String expectedBody = mapper.writeValueAsString(pets);
 
         Map<String, String> params = new HashMap<>();
         params.put("city", "São Paulo");
@@ -118,8 +111,33 @@ public class PetResourceTest {
               .when()
               .get("/pet")
               .then().statusCode(200).body("",notNullValue());
-
-
     }
+
+
+    @Test
+    @DisplayName("Should return a pet info")
+    public void pet_info() {
+        PetEntity pet = new PetEntity();
+        pet.id = UUID.randomUUID();
+        PanacheMock.mock(PetEntity.class);
+        PetEntity.persist(pet);
+
+        Mockito.when(PetEntity.findById(pet.id)).thenReturn(pet);
+
+        given().log().ifValidationFails()
+                .when()
+                .get("/pet/" + pet.id)
+                .then().statusCode(200).contentType(ContentType.JSON).body("",notNullValue());
+    }  @Test
+    @DisplayName("Pet should not exist")
+    public void pet_info_fail() {
+    var response =     given().log().ifValidationFails()
+                .when()
+                .get("/pet/" + "wrongid")
+                .then().statusCode(400).extract().asString();
+
+    assertEquals("Pet solicitado não existe, verifique os dados e tente novamente", response);
+    }
+
 
 }

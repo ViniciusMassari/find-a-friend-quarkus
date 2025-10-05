@@ -1,12 +1,15 @@
 package com.viniciusmassari.pet.controllers;
 
 import com.viniciusmassari.exceptions.OrganizationNotFound;
+import com.viniciusmassari.exceptions.PetNotFoundError;
 import com.viniciusmassari.pet.dto.CreatePetRequestDTO;
 import com.viniciusmassari.pet.dto.GetPetByFiltersDTO;
+import com.viniciusmassari.pet.dto.GetPetByIdResponse;
 import com.viniciusmassari.pet.dto.GetPetsByFiltersResponseDTO;
 import com.viniciusmassari.pet.entity.PetEntity;
 import com.viniciusmassari.pet.usecases.CreatePetUseCase;
 import com.viniciusmassari.pet.usecases.GetPetByFilterUseCase;
+import com.viniciusmassari.pet.usecases.GetPetByIdUseCase;
 import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
@@ -15,11 +18,13 @@ import jakarta.ws.rs.core.Context;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.SecurityContext;
+import jdk.jfr.ContentType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 
 import java.util.List;
+import java.util.UUID;
 
 @Path("/pet")
 @Tag(description = "Operações referentes aos pets",name = "Pets")
@@ -27,6 +32,9 @@ public class PetController {
 
     private static final Logger LOG = Logger.getLogger(PetController.class);
 
+
+    @Inject
+    GetPetByIdUseCase getPetById;
 
     @Inject
     CreatePetUseCase createPet;
@@ -59,6 +67,7 @@ public class PetController {
 
     @GET
     @PermitAll
+
     public Response get_pet_by_filters(@Valid @BeanParam GetPetByFiltersDTO getPetByFilters){
       try{
           List<PetEntity> response = this.getPetByFilterUseCase.execute(getPetByFilters);
@@ -67,5 +76,21 @@ public class PetController {
           LOG.error(e.getLocalizedMessage());
           return Response.serverError().entity("Não foi possível buscar por pets, tente novamente").build();
       }
+    }
+
+    @GET
+    @PermitAll
+    @Path("/{id}")
+    public Response get_pet_info(@PathParam("id") String id){
+        try{
+            PetEntity pet = this.getPetById.execute(id);
+            return Response.ok().entity(new GetPetByIdResponse(pet)).type(MediaType.APPLICATION_JSON).build();
+        } catch(PetNotFoundError | IllegalArgumentException e){
+            LOG.error(e.getLocalizedMessage());
+            return Response.status(400).entity("Pet solicitado não existe, verifique os dados e tente novamente").build();
+        } catch(Exception e){
+            LOG.error(e.getLocalizedMessage());
+            return Response.serverError().entity("Não foi possível buscar pelo pet, tente novamente").build();
+        }
     }
 }
