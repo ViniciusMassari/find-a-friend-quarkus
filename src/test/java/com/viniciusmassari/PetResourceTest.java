@@ -3,9 +3,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import com.viniciusmassari.pet.entity.*;
 import com.viniciusmassari.pet.usecases.CreatePetUseCase;
+import com.viniciusmassari.profiles.NoRateLimitTestProfile;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.common.http.TestHTTPEndpoint;
+import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
 import com.viniciusmassari.pet.dto.CreatePetRequestDTO;
 import io.quarkus.test.junit.QuarkusTest;
@@ -26,11 +29,9 @@ import org.testcontainers.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.*;
 
 @QuarkusTest
+@TestProfile(NoRateLimitTestProfile.class)
 public class PetResourceTest {
     private static final Logger LOG = Logger.getLogger(PetResourceTest.class);
-
-
-
 
     @InjectMock
     JsonWebToken jsonWebToken;
@@ -128,16 +129,19 @@ public class PetResourceTest {
                 .when()
                 .get("/pet/" + pet.id)
                 .then().statusCode(200).contentType(ContentType.JSON).body("",notNullValue());
-    }  @Test
+    }
+    @Test
     @DisplayName("Pet should not exist")
     public void pet_info_fail() {
-    var response =     given().log().ifValidationFails()
+    var response = given()
                 .when()
                 .get("/pet/" + "wrongid")
                 .then().statusCode(400).extract().asString();
 
     assertEquals("Pet solicitado não existe, verifique os dados e tente novamente", response);
     }
+
+
 
 
 }

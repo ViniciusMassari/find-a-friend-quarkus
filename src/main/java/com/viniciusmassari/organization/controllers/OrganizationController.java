@@ -1,5 +1,6 @@
 package com.viniciusmassari.organization.controllers;
 
+import io.smallrye.faulttolerance.api.RateLimit;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.jboss.logging.Logger;
 import com.viniciusmassari.exceptions.OrganizationAlreadyExists;
@@ -16,6 +17,8 @@ import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import jakarta.ws.rs.core.Response;
 import jakarta.ws.rs.core.Response.Status;
+
+import java.time.temporal.ChronoUnit;
 
 @Path("/organization")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -52,6 +55,7 @@ public class OrganizationController {
     @POST
     @Path("/login")
     @PermitAll()
+    @RateLimit(value=3,window = 8,windowUnit = ChronoUnit.SECONDS)
     public Response login_org(@Valid LoginOrganizationRequestDTO loginOrganization) {
         try {
             LoginOrganizationResponseDTO response = this.loginUseCase.execute(loginOrganization);
