@@ -1,12 +1,16 @@
 package com.viniciusmassari;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import com.viniciusmassari.organization.entities.OrganizationEntity;
+import com.viniciusmassari.pet.controllers.PetController;
 import com.viniciusmassari.pet.entity.*;
+import com.viniciusmassari.pet.services.PetCacheService;
 import com.viniciusmassari.pet.usecases.CreatePetUseCase;
 import com.viniciusmassari.profiles.NoRateLimitTestProfile;
 import io.quarkus.hibernate.orm.panache.PanacheQuery;
 import io.quarkus.panache.mock.PanacheMock;
 import io.quarkus.test.InjectMock;
+import io.quarkus.test.TestTransaction;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.TestProfile;
 import io.quarkus.test.security.TestSecurity;
@@ -30,8 +34,13 @@ import java.util.*;
 
 @QuarkusTest
 @TestProfile(NoRateLimitTestProfile.class)
+@TestHTTPEndpoint(PetController.class)
 public class PetResourceTest {
     private static final Logger LOG = Logger.getLogger(PetResourceTest.class);
+
+
+    @InjectMock
+    PetCacheService petCache;
 
     @InjectMock
     JsonWebToken jsonWebToken;
@@ -44,6 +53,7 @@ public class PetResourceTest {
     @Test
     @DisplayName("Should create a new pet (not testing the jwt authentication)")
     @TestSecurity(user = "expectedUser", roles = "user")
+    @TestTransaction
     public void create_pet() {
         PanacheMock.mock(PetEntity.class);
 
@@ -61,7 +71,7 @@ public class PetResourceTest {
                 .contentType(ContentType.JSON)
                 .body(createPetRequest)
                 .when()
-                .post("/pet/")
+                .post()
                 .then()
                 .contentType(ContentType.JSON)
                 .statusCode(201);
@@ -73,7 +83,7 @@ public class PetResourceTest {
 
         Map<String,String> params = new HashMap<>();
         params.put("city","");
-        given().contentType(ContentType.JSON).queryParams(params).get("/pet").then().statusCode(400);
+        given().contentType(ContentType.JSON).queryParams(params).get().then().statusCode(400);
     }
     @Test
     @DisplayName("Should return a 400 status because a param does not correspond with the expected enums")
@@ -84,7 +94,7 @@ public class PetResourceTest {
         params.put("age","wrong value");
         given()
                 .queryParams(params)
-                .get("/pet")
+                .get()
                 .then().statusCode(400);
     }
 
@@ -95,7 +105,6 @@ public class PetResourceTest {
         List<PetEntity> pets = new ArrayList<>();
         pets.add(new PetEntity());
         pets.add(new PetEntity());
-        ObjectMapper mapper = new ObjectMapper();
 
         Map<String, String> params = new HashMap<>();
         params.put("city", "São Paulo");
@@ -110,8 +119,26 @@ public class PetResourceTest {
               .queryParam("city","São Paulo")
               .queryParam("age",Age.FILHOTE.toString())
               .when()
-              .get("/pet")
+              .get()
               .then().statusCode(200).body("",notNullValue());
+    }
+
+    @Test
+    @DisplayName("Should return cached response")
+    @TestTransaction
+    public void should_hit_cache()  {
+        PetEntity pet = new PetEntity();
+        pet.id = UUID.randomUUID();
+
+        Mockito.when(this.petCache.get(pet.id.toString())).thenReturn(pet);
+
+        given().log().ifValidationFails()
+                .when().pathParam("id", pet.id.toString())
+                .get("/{id}")
+                .then().statusCode(200).body("",notNullValue()).header("X-Cache", equalTo("HIT"));
+
+
+
     }
 
 
@@ -126,16 +153,16 @@ public class PetResourceTest {
         Mockito.when(PetEntity.findById(pet.id)).thenReturn(pet);
 
         given().log().ifValidationFails()
-                .when()
-                .get("/pet/" + pet.id)
+                .when().pathParam("id",pet.id.toString())
+                .get("/{id}")
                 .then().statusCode(200).contentType(ContentType.JSON).body("",notNullValue());
     }
     @Test
     @DisplayName("Pet should not exist")
     public void pet_info_fail() {
     var response = given()
-                .when()
-                .get("/pet/" + "wrongid")
+                .when().pathParam("id", "wrongId")
+                .get("/{id}")
                 .then().statusCode(400).extract().asString();
 
     assertEquals("Pet solicitado não existe, verifique os dados e tente novamente", response);

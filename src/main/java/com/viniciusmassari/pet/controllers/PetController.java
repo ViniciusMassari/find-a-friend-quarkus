@@ -7,6 +7,7 @@ import com.viniciusmassari.pet.dto.GetPetByFiltersDTO;
 import com.viniciusmassari.pet.dto.GetPetByIdResponse;
 import com.viniciusmassari.pet.dto.GetPetsByFiltersResponseDTO;
 import com.viniciusmassari.pet.entity.PetEntity;
+import com.viniciusmassari.pet.services.PetCacheService;
 import com.viniciusmassari.pet.usecases.CreatePetUseCase;
 import com.viniciusmassari.pet.usecases.GetPetByFilterUseCase;
 import com.viniciusmassari.pet.usecases.GetPetByIdUseCase;
@@ -16,10 +17,7 @@ import jakarta.annotation.security.PermitAll;
 import jakarta.inject.Inject;
 import jakarta.validation.Valid;
 import jakarta.ws.rs.*;
-import jakarta.ws.rs.core.Context;
-import jakarta.ws.rs.core.MediaType;
-import jakarta.ws.rs.core.Response;
-import jakarta.ws.rs.core.SecurityContext;
+import jakarta.ws.rs.core.*;
 import jdk.jfr.ContentType;
 import org.eclipse.microprofile.jwt.JsonWebToken;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
@@ -48,6 +46,9 @@ public class PetController {
     @Inject
     JsonWebToken jwt;
 
+    @Inject
+    public PetCacheService petCache;
+
     @POST()
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
@@ -74,6 +75,7 @@ public class PetController {
     public Response get_pet_by_filters(@Valid @BeanParam GetPetByFiltersDTO getPetByFilters){
       try{
           List<PetEntity> response = this.getPetByFilterUseCase.execute(getPetByFilters);
+
           return Response.ok().entity(new GetPetsByFiltersResponseDTO(response)).build();
       } catch(Exception e){
           LOG.error(e.getLocalizedMessage());
@@ -86,9 +88,14 @@ public class PetController {
     @PermitAll
     @RateLimit(value = 3,window = 10, windowUnit = ChronoUnit.SECONDS)
     public Response get_pet_info(@PathParam("id") String id){
+      PetEntity cache =  this.petCache.get(id);
+      if(cache != null){
+          return Response.status(200).entity(cache).header("X-Cache", "HIT").build();
+      }
         try{
             PetEntity pet = this.getPetById.execute(id);
-            return Response.ok().entity(new GetPetByIdResponse(pet)).type(MediaType.APPLICATION_JSON).build();
+            this.petCache.set(pet.id.toString(), pet);
+            return Response.ok().entity(new GetPetByIdResponse(pet)).header("X-Cache", "MISS").type(MediaType.APPLICATION_JSON).build();
         }
         catch(PetNotFoundError | IllegalArgumentException e){
             LOG.error(e.getLocalizedMessage());

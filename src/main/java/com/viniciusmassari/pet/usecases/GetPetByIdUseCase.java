@@ -12,7 +12,7 @@ public class GetPetByIdUseCase {
     public PetEntity execute(String id){
 
         try{
-          UUID petId =   UUID.fromString(id);
+          UUID petId =  UUID.fromString(id);
             PetEntity pet = PetEntity.findById(petId);
             if(pet == null){
                 throw new PetNotFoundError("Pet doesn't exist");
