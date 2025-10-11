@@ -89,12 +89,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-hibernate-orm</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.wiremock</groupId>
-            <artifactId>quarkus-wiremock</artifactId>
-            <version>1.5.1</version>
-            <scope>provided</scope>
-        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-smallrye-fault-tolerance</artifactId>
@@ -103,12 +98,7 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-redis-client</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.quarkiverse.wiremock</groupId>
-            <artifactId>quarkus-wiremock-test</artifactId>
-            <version>1.5.1</version>
-            <scope>test</scope>
-        </dependency>
+
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-test-security</artifactId>
